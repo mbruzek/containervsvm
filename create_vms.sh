@@ -20,7 +20,7 @@ ADMIN=admin
 BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.
-PACKAGES=sudo
+PACKAGES=python3-minimal,sudo
 VM_BASE=debian-10
 VM_FORMAT=qcow2
 VM_BASE_FILE=${VM_BASE}.${VM_FORMAT}

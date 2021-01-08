@@ -20,7 +20,7 @@ ADMIN=admin
 BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.
-PACKAGES="sudo,vim-tiny"
+PACKAGES="python3-apt,python3-minimal,sudo,vim-tiny"
 LXC_ARCH=amd64
 LXC_DIST=debian
 LXC_RELEASE=buster
@@ -28,6 +28,7 @@ LXC_TEMPLATE=debian
 LXC_ROOT_DIR=/var/lib/lxc
 
 CONTAINER_PREFIX=lxc
+CONTAINER_BASE=${CONTAINER_PREFIX}-base
 
 BANNER_FILE=banner.txt
 
@@ -44,17 +45,33 @@ read -s -p "Enter administrator password for the containers:" UNENCRYPTED_PASSWO
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 # Ensure the LXC software is installed on the host.
-sudo apt install lxc libvirt0 libpam-cgfs bridge-utils uidmap
+sudo apt install lxc lxc-templates libvirt0 libpam-cgfs bridge-utils uidmap 
 
 echo "Network setup is required, see: https://wiki.debian.org/LXC#Host-shared_bridge_setup"
 
-# When there are no templates, use the download template to download what you want.
-sudo lxc-create -t download -n local-${LXC_TEMPLATE} -- --dist ${LXC_DIST} --release ${LXC_RELEASE} --arch ${LXC_ARCH}
+START=$(date +%s)
 
-if [ ! -e /usr/share/lxc/templates/lxc-debian ]; then
-  sudo wget https://raw.githubusercontent.com/lxc/lxc-templates/master/templates/lxc-debian.in -O /usr/share/lxc/templates/lxc-debian
-  sudo chmod 755 /usr/share/lxc/templates/lxc-debian
-fi
+echo "Creating the container ${CONTAINER_BASE} at $(date)"
+sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${PACKAGES}
+
+# Edit the root filesystem when possible before the container is started.
+echo "Creating the administrator user ${ADMIN}"
+sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/sbin/useradd -m -G sudo -c Administrator -s /bin/bash -p ${ENCRYPTED_PASSWORD} ${ADMIN};
+
+sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/bin/mkdir /home/${ADMIN}/.ssh;
+echo "Creating authorized_keys file to allow ssh to this container."
+sudo cp -v ${PUBLIC_KEY} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/home/${ADMIN}/.ssh/authorized_keys
+
+# Copy the banner file to the container.
+sudo cp -v ${BANNER_FILE} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/${BANNER_FILE}
+# Modify sshd_config to use the baner file.
+sudo sed -i "s|^#Banner.*|Banner /etc/${BANNER_FILE}|" ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/ssh/sshd_config
+# Create links to the banner file with /etc/issue and /etc/issue.net
+sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/bin/ln -s -f /etc/${BANNER_FILE} /etc/issue
+sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/bin/ln -s -f /etc/${BANNER_FILE} /etc/issue.net
+
+FINISH=$(date +%s)
+echo "Creating ${CONTAINER_BASE} took $(($FINISH-$START)) seconds."
 
 # Loop in a sequence for the desired number of containers.
 for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
@@ -62,31 +79,11 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
 
   CONTAINER_NAME=${CONTAINER_PREFIX}${NUM}
 
-  echo "Creating the container ${CONTAINER_NAME} at $(date)"
-  sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_NAME} -- --enable-non-free --packages=${PACKAGES}
+  echo "Starting customization of ${CONTAINER_NAME} at $(date)"
+  sudo lxc-copy --name ${CONTAINER_BASE} --newname=${CONTAINER_NAME}
 
-  # Edit the root filesystem when possible before the container is started.
-  echo "Creating the administrator user ${ADMIN}"
-  sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_NAME}/rootfs /usr/sbin/useradd -m -G sudo -c Administrator -s /bin/bash -p ${ENCRYPTED_PASSWORD} ${ADMIN};
-
-  sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_NAME}/rootfs /usr/bin/mkdir /home/${ADMIN}/.ssh;
-  echo "Creating authorized_keys file to allow ssh to this container."
-  sudo cp -v ${PUBLIC_KEY} ${LXC_ROOT_DIR}/${CONTAINER_NAME}/rootfs/home/${ADMIN}/.ssh/authorized_keys
-
-  # Copy the banner file to the container.
-  sudo cp -v ${BANNER_FILE} ${LXC_ROOT_DIR}/${CONTAINER_NAME}/rootfs/etc/${BANNER_FILE}
-  # Modify sshd_config to use the baner file.
-  sudo sed -i "s|^#Banner.*|Banner /etc/${BANNER_FILE}|" ${LXC_ROOT_DIR}/${CONTAINER_NAME}/rootfs/etc/ssh/sshd_config
-  # Create links to the banner file with /etc/issue and /etc/issue.net
-  sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_NAME}/rootfs /usr/bin/ln -s -f /etc/${BANNER_FILE} /etc/issue
-  sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_NAME}/rootfs /usr/bin/ln -s -f /etc/${BANNER_FILE} /etc/issue.net
-
-  FINISH=$(date +%s)
-  echo "Creating ${CONTAINER_NAME} took $(($FINISH-$START)) seconds."
-
-  START=$(date +%s)
   # Start the container and run the init process.
-  sudo lxc-start -n ${CONTAINER_NAME}
+  sudo lxc-start --name ${CONTAINER_NAME}
 
   # Loop until the command does not return an error.
   sudo lxc-attach -n ${CONTAINER_NAME} -- bash -c 'while $(systemctl is-system-running &>/dev/null); (($?==1)); do :; done'
@@ -97,11 +94,17 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
   sudo lxc-attach -n ${CONTAINER_NAME} -- chown -R ${ADMIN}:${ADMIN} /home/${ADMIN}/.ssh
 
   echo "Setting the root password"
-  echo "${UNENCRYPTED_PASSWORD}\n${UNENCRYPTED_PASSWORD}" | sudo lxc-attach -n ${CONTAINER_NAME} -- passwd
+  echo -e "${UNENCRYPTED_PASSWORD}\n${UNENCRYPTED_PASSWORD}" | sudo lxc-attach -n ${CONTAINER_NAME} -- passwd
+
+  echo "Changing the hostname to ${CONTAINER_NAME}"
+  sudo lxc-attach -n ${CONTAINER_NAME} -- hostname ${CONTAINER_NAME}
 
   FINISH=$(date +%s)
-  echo "Starting ${CONTAINER_NAME} took $(($FINISH-$START)) seconds."
+  echo "Customization of ${CONTAINER_NAME} took $(($FINISH-$START)) seconds."
 done
+
+# Delete the base container.
+sudo lxc-destroy --force --name ${CONTAINER_BASE}
 
 END=$(date +%s)
 echo "$(basename $0) script completed in $(($END-$BEGIN)) seconds total."

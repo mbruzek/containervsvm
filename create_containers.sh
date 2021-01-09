@@ -16,7 +16,7 @@ else
   RANGE_STOP=1
 fi
 # The administrator user that will be created.
-ADMIN=admin
+ADMIN=${USER}
 BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.
@@ -45,7 +45,7 @@ read -s -p "Enter administrator password for the containers:" UNENCRYPTED_PASSWO
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 # Ensure the LXC software is installed on the host.
-sudo apt install lxc lxc-templates libvirt0 libpam-cgfs bridge-utils uidmap 
+sudo apt install lxc lxc-templates libvirt0 libpam-cgfs bridge-utils uidmap
 
 echo "Network setup is required, see: https://wiki.debian.org/LXC#Host-shared_bridge_setup"
 

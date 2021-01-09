@@ -16,7 +16,7 @@ else
   RANGE_STOP=1
 fi
 # The administrator user that will be created.
-ADMIN=admin
+ADMIN=${USER}
 BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.

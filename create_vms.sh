@@ -17,16 +17,19 @@ else
 fi
 # The administrator user that will be created.
 ADMIN=${USER}
+ADMIN_HOME=/home/${ADMIN}
 BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.
 PACKAGES=python3-minimal,sudo
 VM_BASE=debian-10
+VM_DISK_SIZE=12G
 VM_FORMAT=qcow2
 VM_BASE_FILE=${VM_BASE}.${VM_FORMAT}
 # The type and name of network to use for the virtual machines (bridge=br0).
 VM_NETWORK="network=default"
 VM_PREFIX=vm
+VM_RAM=1024
 
 BANNER_FILE=banner.txt
 
@@ -55,12 +58,12 @@ virt-builder ${VM_BASE} \
   --append-line "/etc/network/interfaces:iface enp1s0 inet dhcp" \
   --install ${PACKAGES} \
   --output ${VM_BASE_FILE} \
-  --run-command 'useradd -m -G sudo -c "Administrator account" -s /bin/bash '"${ADMIN}"'' \
+  --run-command 'useradd -c "Administrator account" -d ${ADMIN_HOME} -G sudo -m -s /bin/bash '"${ADMIN}"'' \
   --smp 4 \
   --ssh-inject ${ADMIN}:file:${PUBLIC_KEY} \
   --root-password password:${UNENCRYPTED_PASSWORD} \
   --password ${ADMIN}:password:${UNENCRYPTED_PASSWORD} \
-  --size 12G \
+  --size ${VM_DISK_SIZE} \
   --upload ${BANNER_FILE}:/etc/${BANNER_FILE} \
   --link /etc/${BANNER_FILE}:/etc/issue.net:/etc/issue \
   --run-command 'sed -i "s|^#Banner.*|Banner /etc/'"${BANNER_FILE}"'|" /etc/ssh/sshd_config' \
@@ -94,7 +97,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
     --description "Virtual Machine created from ${VM_BASE} on $(date)" \
     --disk path=${DISK_PATH},format=${VM_FORMAT} \
     --import \
-    --memory 2048 \
+    --memory ${VM_RAM} \
     --name ${VM_NAME} \
     --network ${VM_NETWORK} \
     --noautoconsole \

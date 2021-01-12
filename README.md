@@ -18,7 +18,7 @@ of inotify instances and watches. The signature of this problem is the script
 no longer making progress, this is because the container's systemd is reporting
 degrated state and the script can not complete.
 
-To verify this problem attempt to start the container in the foreground and 
+To verify this problem attempt to start the container in the foreground and
 observe the problem text:  
 
 ```
@@ -49,7 +49,6 @@ sudo sysctl -p
 ```
 
 ---
-
 
 ### LXC References
 

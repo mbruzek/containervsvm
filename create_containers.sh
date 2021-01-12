@@ -17,6 +17,7 @@ else
 fi
 # The administrator user that will be created.
 ADMIN=${USER}
+ADMIN_HOME=/home/${ADMIN}
 BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.
@@ -56,11 +57,12 @@ sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-
 
 # Edit the root filesystem when possible before the container is started.
 echo "Creating the administrator user ${ADMIN}"
-sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/sbin/useradd -m -G sudo -c Administrator -s /bin/bash -p ${ENCRYPTED_PASSWORD} ${ADMIN};
+sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/sbin/useradd -c Administrator -d ${ADMIN_HOME} -G sudo -m -s /bin/bash -p ${ENCRYPTED_PASSWORD} ${ADMIN};
 
-sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/bin/mkdir /home/${ADMIN}/.ssh;
+sudo mkdir -p ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh
+sudo chmod 700 ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh
 echo "Creating authorized_keys file to allow ssh to this container."
-sudo cp -v ${PUBLIC_KEY} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/home/${ADMIN}/.ssh/authorized_keys
+sudo cp -v ${PUBLIC_KEY} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh/authorized_keys
 
 # Copy the banner file to the container.
 sudo cp -v ${BANNER_FILE} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/${BANNER_FILE}
@@ -91,7 +93,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
   sudo lxc-attach -n ${CONTAINER_NAME} -- systemctl is-system-running --wait
 
   echo "Changing ownership of the .ssh directory to ${ADMIN}"
-  sudo lxc-attach -n ${CONTAINER_NAME} -- chown -R ${ADMIN}:${ADMIN} /home/${ADMIN}/.ssh
+  sudo lxc-attach -n ${CONTAINER_NAME} -- chown -R ${ADMIN}:${ADMIN} ${ADMIN_HOME}/.ssh
 
   echo "Setting the root password"
   echo -e "${UNENCRYPTED_PASSWORD}\n${UNENCRYPTED_PASSWORD}" | sudo lxc-attach -n ${CONTAINER_NAME} -- passwd

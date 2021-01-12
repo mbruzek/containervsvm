@@ -58,7 +58,7 @@ virt-builder ${VM_BASE} \
   --append-line "/etc/network/interfaces:iface enp1s0 inet dhcp" \
   --install ${PACKAGES} \
   --output ${VM_BASE_FILE} \
-  --run-command 'useradd -c "Administrator account" -d ${ADMIN_HOME} -G sudo -m -s /bin/bash '"${ADMIN}"'' \
+  --run-command 'useradd -c "Administrator account" -d '"${ADMIN_HOME}"' -G sudo -m -s /bin/bash '"${ADMIN}"'' \
   --smp 4 \
   --ssh-inject ${ADMIN}:file:${PUBLIC_KEY} \
   --root-password password:${UNENCRYPTED_PASSWORD} \

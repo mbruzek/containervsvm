@@ -54,7 +54,7 @@ START=$(date +%s)
 
 echo "Starting build of ${VM_BASE_FILE} at $(date)"
 # Build a minimal install of a debian VM before the loop starts.
-virt-builder ${VM_BASE} \
+sudo virt-builder ${VM_BASE} \
   --format ${VM_FORMAT} \
   --append-line "/etc/network/interfaces:auto enp1s0" \
   --append-line "/etc/network/interfaces:iface enp1s0 inet dhcp" \
@@ -82,9 +82,9 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
 
   echo "Starting customization of ${VM_NAME} at $(date)"
   # Copy the VM base file to the disk path and set a different hostname.
-  cp -v --sparse=always ${VM_BASE_FILE} ${DISK_PATH}
+  sudo cp -v --sparse=always ${VM_BASE_FILE} ${DISK_PATH}
   # Set the hostname for this VM image.
-  virt-customize -a ${DISK_PATH} \
+  sudo virt-customize -a ${DISK_PATH} \
     --hostname ${VM_NAME}
 
   FINISH=$(date +%s)
@@ -104,7 +104,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
     --network ${VM_NETWORK} \
     --noautoconsole \
     --os-type linux \
-    --os-variant debian10 \
+    --os-variant debiantesting \
     --serial pty \
     --vcpus ${VM_CPUS}
 
@@ -113,7 +113,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
 done
 
 # Delete the VM base file.
-rm ${VM_BASE_FILE}
+sudo rm -v ${VM_BASE_FILE}
 
 END=$(date +%s)
 echo "$(basename $0) script completed in $(($END-$BEGIN)) seconds total."

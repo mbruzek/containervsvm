@@ -16,7 +16,7 @@ else
   RANGE_STOP=1
 fi
 BEGIN=$(date +%s)
-VM_PREFIX=vm
+VM_PREFIX=kvm
 
 # Loop over the specified number of VMs.
 for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do

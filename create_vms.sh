@@ -22,14 +22,16 @@ BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.
 PACKAGES=python3-minimal,sudo
+VM_CPUS=2
 VM_BASE=debian-10
 VM_DISK_SIZE=12G
 VM_FORMAT=qcow2
 VM_BASE_FILE=${VM_BASE}.${VM_FORMAT}
 # The type and name of network to use for the virtual machines (bridge=br0).
 VM_NETWORK="network=default"
-VM_PREFIX=vm
 VM_RAM=1024
+
+VM_PREFIX=kvm
 
 BANNER_FILE=banner.txt
 
@@ -41,8 +43,8 @@ PUBLIC_KEY=id_${ALGORITHM}.pub
 ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_KEY}
 
 # Prompt the user for the administrator password.
-read -s -p "Enter administrator password for the VMs:" UNENCRYPTED_PASSWORD
-# Create the encrypted password with mkpasswd --method=sha-512
+read -s -p "Enter the password for the VMs:" UNENCRYPTED_PASSWORD
+# Create an encrypted password with mkpasswd --method=sha-512
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 # Ensure the VM guestfs tools are installed on the host.
@@ -51,14 +53,14 @@ sudo apt install libguestfs-tools
 START=$(date +%s)
 
 echo "Starting build of ${VM_BASE_FILE} at $(date)"
-# Build a minimal install of a debian VM first before the loop starts.
+# Build a minimal install of a debian VM before the loop starts.
 virt-builder ${VM_BASE} \
   --format ${VM_FORMAT} \
   --append-line "/etc/network/interfaces:auto enp1s0" \
   --append-line "/etc/network/interfaces:iface enp1s0 inet dhcp" \
   --install ${PACKAGES} \
   --output ${VM_BASE_FILE} \
-  --run-command 'useradd -c "Administrator account" -d '"${ADMIN_HOME}"' -G sudo -m -s /bin/bash '"${ADMIN}"'' \
+  --run-command 'useradd -c "The Administrator account" -d '"${ADMIN_HOME}"' -G sudo -m -s /bin/bash '"${ADMIN}"'' \
   --smp 4 \
   --ssh-inject ${ADMIN}:file:${PUBLIC_KEY} \
   --root-password password:${UNENCRYPTED_PASSWORD} \
@@ -104,13 +106,13 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
     --os-type linux \
     --os-variant debian10 \
     --serial pty \
-    --vcpus 2
+    --vcpus ${VM_CPUS}
 
   FINISH=$(date +%s)
   echo "Installing ${VM_NAME} took $(($FINISH-$START)) seconds."
 done
 
-# Delete the VM base file
+# Delete the VM base file.
 rm ${VM_BASE_FILE}
 
 END=$(date +%s)

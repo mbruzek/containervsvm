@@ -41,8 +41,8 @@ PUBLIC_KEY=id_${ALGORITHM}.pub
 ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_KEY}
 
 # Prompt the user for the administrator password.
-read -s -p "Enter administrator password for the containers:" UNENCRYPTED_PASSWORD
-# Create the encrypted password with mkpasswd --method=sha-512
+read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD
+# Create an encrypted password with mkpasswd --method=sha-512
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 # Ensure the LXC software is installed on the host.
@@ -55,12 +55,21 @@ START=$(date +%s)
 echo "Creating the container ${CONTAINER_BASE} at $(date)"
 sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${PACKAGES}
 
-# Edit the root filesystem when possible before the container is started.
+# Run commands that edit the root filesystem before the container is started.
 echo "Creating the administrator user ${ADMIN}"
-sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/sbin/useradd -c Administrator -d ${ADMIN_HOME} -G sudo -m -s /bin/bash -p ${ENCRYPTED_PASSWORD} ${ADMIN};
+sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/sbin/useradd \
+  -c 'The Administrator account' \
+  -d ${ADMIN_HOME} \
+  -G sudo \
+  -m \
+  -p ${ENCRYPTED_PASSWORD} \
+  -s /bin/bash \
+  ${ADMIN};
 
+# Create the administrator user's .ssh directory.
 sudo mkdir -p ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh
 sudo chmod 700 ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh
+
 echo "Creating authorized_keys file to allow ssh to this container."
 sudo cp -v ${PUBLIC_KEY} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh/authorized_keys
 
@@ -102,7 +111,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
   sudo lxc-attach -n ${CONTAINER_NAME} -- hostname ${CONTAINER_NAME}
 
   FINISH=$(date +%s)
-  echo "Customization of ${CONTAINER_NAME} took $(($FINISH-$START)) seconds."
+  echo "Customizing ${CONTAINER_NAME} took $(($FINISH-$START)) seconds."
 done
 
 # Delete the base container.

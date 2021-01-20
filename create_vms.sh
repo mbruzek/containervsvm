@@ -21,7 +21,7 @@ ADMIN_HOME=/home/${ADMIN}
 BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.
-PACKAGES=python3-minimal,sudo
+PACKAGES=gpm,python3-apt,python3-minimal,sudo,vim-tiny
 VM_CPUS=2
 VM_BASE=debian-10
 VM_DISK_SIZE=12G
@@ -69,7 +69,8 @@ sudo virt-builder ${VM_BASE} \
   --upload ${BANNER_FILE}:/etc/${BANNER_FILE} \
   --link /etc/${BANNER_FILE}:/etc/issue.net:/etc/issue \
   --run-command 'sed -i "s|^#Banner.*|Banner /etc/'"${BANNER_FILE}"'|" /etc/ssh/sshd_config' \
-  --firstboot-command "dpkg-reconfigure openssh-server"
+  --firstboot-command "dpkg-reconfigure openssh-server" \
+  --write /etc/sudoers.d/50-${ADMIN}-NOPASSWD:"${ADMIN} ALL=(ALL:ALL) NOPASSWD:ALL"
 FINISH=$(date +%s)
 echo "Building ${VM_BASE} took $(($FINISH-$START)) seconds."
 

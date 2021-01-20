@@ -21,7 +21,7 @@ ADMIN_HOME=/home/${ADMIN}
 BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.
-PACKAGES="python3-apt,python3-minimal,sudo,vim-tiny"
+PACKAGES=python3-apt,python3-minimal,sudo,vim-tiny
 LXC_ARCH=amd64
 LXC_DIST=debian
 LXC_RELEASE=buster
@@ -72,6 +72,12 @@ sudo chmod 700 ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh
 
 echo "Creating authorized_keys file to allow ssh to this container."
 sudo cp -v ${PUBLIC_KEY} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh/authorized_keys
+
+# Create a file to enable passwordless sudo for the Administrator user.
+echo "${ADMIN} ALL=(ALL:ALL) NOPASSWD:ALL" > 50-${ADMIN}-NOPASSWD
+# Copy the file to the sudoers.d directory.
+sudo cp -v 50-${ADMIN}-NOPASSWD ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/sudoers.d/
+rm -v 50-${ADMIN}-NOPASSWD
 
 # Copy the banner file to the container.
 sudo cp -v ${BANNER_FILE} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/${BANNER_FILE}

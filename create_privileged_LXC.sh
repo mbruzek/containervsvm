@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-# Create a number of containers using LXC.
+# Create a number of privileged LXC containers.
+
+# Privileged containers are defined as any countainer where the container uid 0
+# is mapped to the host's uid 0. In such containers, protection of the host
+# and prevention of escape is entirely done through Mandatory Access Control
+# (apparmor, selinux), seccomp filters, dropping of capabilities and namespaces.
 
 if [ "$#" -eq 2 ] ; then
   # When there are two arguments, the first is range start, the second is range stop.
@@ -22,13 +27,13 @@ BEGIN=$(date +%s)
 
 # Comma separated list of packages to install.
 PACKAGES=python3-apt,python3-minimal,sudo,vim-tiny
-LXC_ARCH=amd64
-LXC_DIST=debian
-LXC_RELEASE=buster
+LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
+LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
+LXC_RELEASE=buster # #(lsb_release --codename --short)
 LXC_TEMPLATE=debian
 LXC_ROOT_DIR=/var/lib/lxc
 
-CONTAINER_PREFIX=lxc
+CONTAINER_PREFIX=priv-LXC
 CONTAINER_BASE=${CONTAINER_PREFIX}-base
 
 BANNER_FILE=banner.txt
@@ -103,18 +108,18 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
   sudo lxc-start --name ${CONTAINER_NAME}
 
   # Loop until the command does not return an error.
-  sudo lxc-attach -n ${CONTAINER_NAME} -- bash -c 'while $(systemctl is-system-running &>/dev/null); (($?==1)); do :; done'
+  sudo lxc-attach --name ${CONTAINER_NAME} -- bash -c 'while $(systemctl is-system-running &>/dev/null); (($?==1)); do :; done'
   # Wait for the system to fully start.
-  sudo lxc-attach -n ${CONTAINER_NAME} -- systemctl is-system-running --wait
+  sudo lxc-attach --name ${CONTAINER_NAME} -- systemctl is-system-running --wait
 
   echo "Changing ownership of the .ssh directory to ${ADMIN}"
-  sudo lxc-attach -n ${CONTAINER_NAME} -- chown -R ${ADMIN}:${ADMIN} ${ADMIN_HOME}/.ssh
+  sudo lxc-attach --name ${CONTAINER_NAME} -- chown -R ${ADMIN}:${ADMIN} ${ADMIN_HOME}/.ssh
 
   echo "Setting the root password"
-  echo -e "${UNENCRYPTED_PASSWORD}\n${UNENCRYPTED_PASSWORD}" | sudo lxc-attach -n ${CONTAINER_NAME} -- passwd
+  echo -e "${UNENCRYPTED_PASSWORD}\n${UNENCRYPTED_PASSWORD}" | sudo lxc-attach --name ${CONTAINER_NAME} -- passwd
 
   echo "Changing the hostname to ${CONTAINER_NAME}"
-  sudo lxc-attach -n ${CONTAINER_NAME} -- hostname ${CONTAINER_NAME}
+  sudo lxc-attach --name ${CONTAINER_NAME} -- hostname ${CONTAINER_NAME}
 
   FINISH=$(date +%s)
   echo "Customizing ${CONTAINER_NAME} took $(($FINISH-$START)) seconds."

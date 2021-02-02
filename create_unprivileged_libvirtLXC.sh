@@ -20,7 +20,7 @@ ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
 BANNER_FILE=banner.txt
 BEGIN=$(date +%s)
-CONTAINER_PREFIX=libvirtLXC
+CONTAINER_PREFIX=unpriv-libvirtLXC
 CONTAINER_BASE=${CONTAINER_PREFIX}-base
 LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
 LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
@@ -47,7 +47,7 @@ read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 # Ensure the LXC software is installed on the host.
-sudo apt install lxc lxc-templates libvirt0 libpam-cgfs bridge-utils uidmap
+sudo apt install -y lxc lxc-templates libvirt-daemon-driver-lxc libvirt0 libpam-cgfs bridge-utils uidmap
 
 # All the kernel to create unprivileged user namespace clones.
 sudo sh -c 'echo "kernel.unprivileged_userns_clone=1" > /etc/sysctl.d/80-lxc-userns.conf'

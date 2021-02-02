@@ -25,7 +25,7 @@ ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
 BANNER_FILE=banner.txt
 BEGIN=$(date +%s)
-CONTAINER_PREFIX=libvirtLXC
+CONTAINER_PREFIX=priv-libvirtLXC
 CONTAINER_BASE=${CONTAINER_PREFIX}-base
 LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
 LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
@@ -52,7 +52,7 @@ read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 # Ensure the LXC software is installed on the host.
-sudo apt install lxc lxc-templates libvirt0 libpam-cgfs bridge-utils uidmap
+sudo apt install -y lxc lxc-templates libvirt-daemon-driver-lxc libvirt0 libpam-cgfs bridge-utils uidmap
 
 echo "Network setup is required, see: https://wiki.debian.org/LXC#Host-shared_bridge_setup"
 
@@ -101,6 +101,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
   START=$(date +%s)
 
   CONTAINER_NAME=${CONTAINER_PREFIX}${NUM}
+  CONTAINER_PATH=${LXC_ROOT_DIR}/${CONTAINER_NAME}/rootfs
 
   echo "Starting customization of ${CONTAINER_NAME} at $(date)"
   sudo lxc-copy --name ${CONTAINER_BASE} --newname=${CONTAINER_NAME}
@@ -122,7 +123,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
   echo "Changing the hostname to ${CONTAINER_NAME}"
   sudo lxc-attach --name ${CONTAINER_NAME} -- hostname ${CONTAINER_NAME}
 
-  sudo lxc-stop --name ${CONTAINER_NAME} 
+  sudo lxc-stop --name ${CONTAINER_NAME}
 
   FINISH=$(date +%s)
   echo "Customizing ${CONTAINER_NAME} took $(($FINISH-$START)) seconds."

@@ -46,7 +46,7 @@ read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 # Ensure the LXC software is installed on the host.
-sudo apt install lxc lxc-templates libvirt0 libpam-cgfs bridge-utils uidmap
+sudo apt install -y lxc lxc-templates libvirt0 libpam-cgfs bridge-utils uidmap
 
 # All the kernel to create unprivileged user namespace clones.
 sudo sh -c 'echo "kernel.unprivileged_userns_clone=1" > /etc/sysctl.d/80-lxc-userns.conf'

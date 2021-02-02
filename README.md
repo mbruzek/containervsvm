@@ -39,14 +39,15 @@ cat /proc/sys/fs/inotify/max_user_instances
 1024
 ```
 
-To increase the inotify instances, watchers and pty  by appending values to the kernel
-parameter file `/etc/sysctl.conf` file and reload the configuration file.
+To increase the inotify instances, watchers and pty by configuring the kernel
+runtime parameters. You can do this by editing the `/etc/sysctl.conf` file or
+write your own file to the `/etc/sysctl.d` directory.
 
 ```
-echo fs.inotify.max_users_watches = 98304 | sudo tee -a /etc/sysctl.conf
-echo fs.inotify.max_users_instances = 1536 | sudo tee -a /etc/sysctl.conf
-echo kernel.pty.max = 6144 | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
+echo fs.inotify.max_users_watches = 98304 | sudo tee -a /etc/sysctl.d/50-increase-inotify-pty.conf
+echo fs.inotify.max_users_instances = 1536 | sudo tee -a /etc/sysctl.d/50-increase-inotify-pty.conf
+echo kernel.pty.max = 6144 | sudo tee -a /etc/sysctl.d/50-increase-inotify-pty.conf
+sudo sysctl --system
 ```
 
 ---
@@ -93,5 +94,70 @@ and the way to do this correctly and safely.
 
 The idea is to get a comparison between system containers and VMs without the
 marketing bull.
+
+---
+
+## libvirt-LXC
+
+The libvirt LXC driver manages linux containers. This is different than the
+userspace LXC commands. The libvirt LXC containers would show up in
+virt-manager application.
+
+libvirt-LXC containers require a filesystems to be mounted.
+You can create a libvirt LXC container with LXC commands or debootstrap
+commands.
+
+```
+virsh --connect lxc:/// define newguest.xml
+virsh --connect lxc:/// start newguest.xml
+virsh --connect lxc:/// undefine newguest
+virsh --connect lxc:/// destroy newguest
+
+```
+
+### libvirt-LXC References
+
+* [libvirt-LXC](https://libvirt.org/drvlxc.html)
+
+---
+
+## debootstrap
+
+debootstrap is a tool that installs a Debian system into a subdirectory of
+another already installed system. It only requires access to a Debian
+repository it can be run from other operating systems.
+
+debootstrap can be run completely from a command line, no config files are
+required.
+
+```
+debootstrap --include=sudo,vim-tiny stable /var/lib/machines/debian````
+
+## systemd-nspawn
+
+systemd-nspawn may be used to run a command in a light-weight namespace
+container similar to chroot but also virtualizes the filesystem hierarchy,
+process tree, various IPC subsystems.
+
+```
+systemd-nspawn -D /var/lib/machines/debian -U --machine debian
+
+systemctl start systemd-nspawn@debian
+
+systemctl stop systemd-nspawn@debian
+```
+
+## machinectl
+
+```
+machinectl list
+machinectl login debian
+```
+
+### References
+
+* [debootstrap](https://wiki.debian.org/Debootstrap)
+* [systemd-nspawn](https://wiki.debian.org/nspawn)
+* [machinectl](https://www.freedesktop.org/software/systemd/man/machinectl.html)
 
 ---

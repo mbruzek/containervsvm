@@ -48,7 +48,7 @@ read -s -p "Enter the password for the VMs:" UNENCRYPTED_PASSWORD
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 # Ensure the VM guestfs tools are installed on the host.
-sudo apt install libguestfs-tools
+sudo apt install -y libguestfs-tools
 
 START=$(date +%s)
 

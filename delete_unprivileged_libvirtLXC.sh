@@ -23,9 +23,9 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
   # Create the container name based on the number.
   CONTAINER_NAME=${CONTAINER_PREFIX}${NUM}
   echo "Attempting to stop ${CONTAINER_NAME}"
-  sudo virsh --connect lxc:/// destroy ${CONTAINER_NAME}
+  virsh --connect lxc:/// destroy ${CONTAINER_NAME}
   echo "Removing definition of ${CONTAINER_NAME} from virt-manager"
-  sudo virsh --connect lxc:/// undefine ${CONTAINER_NAME}
+  virsh --connect lxc:/// undefine ${CONTAINER_NAME}
   # Root must change ownership back before lxc-destroy is called.
   sudo chown -R ${USER}:${USER} ${HOME}/.local/share/lxc/${CONTAINER_NAME}
   echo "Deleting the LXC container ${CONTAINER_NAME}"

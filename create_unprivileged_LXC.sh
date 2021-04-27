@@ -41,7 +41,7 @@ PUBLIC_KEY=id_${ALGORITHM}.pub
 ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_KEY}
 
 # Ensure the LXC software is installed on the host.
-sudo apt install -y lxc lxc-templates libvirt0 libpam-cgfs bridge-utils uidmap whois
+sudo apt install -y lxc lxc-templates libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois
 
 # Prompt the user for the administrator password.
 read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD

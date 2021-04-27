@@ -52,7 +52,7 @@ read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 # Ensure the LXC software is installed on the host.
-sudo apt install -y lxc lxc-templates libvirt-daemon-driver-lxc libvirt0 libpam-cgfs bridge-utils uidmap
+sudo apt install -y lxc lxc-templates libvirt-daemon-driver-lxc libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap
 
 echo "Network setup is required, see: https://wiki.debian.org/LXC#Host-shared_bridge_setup"
 

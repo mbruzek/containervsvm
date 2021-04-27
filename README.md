@@ -44,9 +44,9 @@ runtime parameters. You can do this by editing the `/etc/sysctl.conf` file or
 write your own file to the `/etc/sysctl.d` directory.
 
 ```
-echo fs.inotify.max_user_watches = 98304 | sudo tee -a /etc/sysctl.d/50-increase-inotify-pty.conf
-echo fs.inotify.max_user_instances = 1536 | sudo tee -a /etc/sysctl.d/50-increase-inotify-pty.conf
-echo kernel.pty.max = 6144 | sudo tee -a /etc/sysctl.d/50-increase-inotify-pty.conf
+echo fs.inotify.max_user_watches = 98304 | sudo tee -a /etc/sysctl.d/50-lxc-limit-increase.conf
+echo fs.inotify.max_user_instances = 1536 | sudo tee -a /etc/sysctl.d/50-lxc-limit-increase.conf
+echo kernel.pty.max = 6144 | sudo tee -a /etc/sysctl.d/50-lxc-limit-increase.conf
 sudo sysctl --system
 ```
 

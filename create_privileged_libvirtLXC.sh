@@ -46,13 +46,13 @@ PUBLIC_KEY=id_${ALGORITHM}.pub
 # Create a new ssh key to manage the containers.
 ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_KEY}
 
+# Ensure the LXC software and mkpasswd is installed on the host.
+sudo apt install -y lxc lxc-templates libvirt-daemon-driver-lxc libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois
+
 # Prompt the user for the administrator password.
 read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD
 # Create an encrypted password with mkpasswd --method=sha-512
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
-
-# Ensure the LXC software is installed on the host.
-sudo apt install -y lxc lxc-templates libvirt-daemon-driver-lxc libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap
 
 echo "Network setup is required, see: https://wiki.debian.org/LXC#Host-shared_bridge_setup"
 

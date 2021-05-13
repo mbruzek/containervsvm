@@ -42,13 +42,13 @@ PUBLIC_KEY=id_${ALGORITHM}.pub
 # Create a new ssh key to manage the VMs.
 ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_KEY}
 
+# Ensure the VM guestfs tools and mkpasswd (whois) are installed on the host.
+sudo apt install -y libguestfs-tools whois
+
 # Prompt the user for the administrator password.
 read -s -p "Enter the password for the VMs:" UNENCRYPTED_PASSWORD
 # Create an encrypted password with mkpasswd --method=sha-512
 ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
-
-# Ensure the VM guestfs tools are installed on the host.
-sudo apt install -y libguestfs-tools
 
 START=$(date +%s)
 

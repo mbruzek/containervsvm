@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# The most classic way to create a system is debootstrap. Debootstrap can not be 
+# The most classic way to create a system is debootstrap. Debootstrap can not be
 # considered a real "container" but included in this repository as an example.
 if [ "$#" -eq 2 ] ; then
   # When there are two arguments, the first is range start, the second is range stop.
@@ -27,8 +27,8 @@ SUITE=buster # $(lsb_release --codename --short)
 CONTAINER_BASE=debootstrap-base
 MIRROR=http://httpredir.debian.org/debian
 
-# Ensure the host has the debootstrap software installed.
-sudo apt install -y bridge-utils debootstrap systemd-container
+# Ensure the host has the debootstrap and mkpasswd software installed.
+sudo apt install -y bridge-utils debootstrap systemd-container whois
 
 # Use the new Elliptic Curve Digital Signature Algorithm standarized by the US government.
 ALGORITHM=ecdsa
@@ -68,7 +68,7 @@ sudo cp ${BANNER_FILE} ${CONTAINER_BASE}/etc/issue
 sudo chroot ${CONTAINER_BASE} ln --symbolic --force /etc/issue /etc/issue.net
 sudo chroot ${CONTAINER_BASE} sed -i "s|^#Banner.*|Banner /etc/issue|" /etc/ssh/sshd_config
 # Set the root password.
-echo -e "${UNENCRYPTED_PASSWORD}\n${UNENCRYPTED_PASSWORD}" | sudo chroot ${CONTAINER_BASE} passwd 
+echo -e "${UNENCRYPTED_PASSWORD}\n${UNENCRYPTED_PASSWORD}" | sudo chroot ${CONTAINER_BASE} passwd
 
 BEFORE=$(sudo du -s ${CONTAINER_BASE} | awk '{print $1}')
 echo "Size of the ${CONTAINER_BASE} directory before minimization is ${BEFORE}"

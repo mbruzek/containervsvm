@@ -131,7 +131,11 @@ debootstrap can be run completely from a command line, no config files are
 required.
 
 ```
-debootstrap --include=sudo,vim-tiny stable /var/lib/machines/debian````
+debootstrap --include=sudo,vim-tiny stable /var/lib/machines/debian
+
+````
+
+---
 
 ## systemd-nspawn
 
@@ -145,13 +149,19 @@ systemd-nspawn -D /var/lib/machines/debian -U --machine debian
 systemctl start systemd-nspawn@debian
 
 systemctl stop systemd-nspawn@debian
+
 ```
 
+---
+
 ## machinectl
+
+The command machine control can start and login to containers.
 
 ```
 machinectl list
 machinectl login debian
+
 ```
 
 ### References

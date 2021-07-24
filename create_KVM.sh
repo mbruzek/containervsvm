@@ -18,32 +18,30 @@ fi
 # The administrator user that will be created.
 ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
+# Use the new Elliptic Curve Digital Signature Algorithm standarized by the US government.
+ALGORITHM=ecdsa
 BEGIN=$(date +%s)
-
-# Comma separated list of packages to install.
-PACKAGES=gpm,python3-apt,python3-minimal,sudo,vim-tiny
+BANNER_FILE=banner.txt
+HOST_PACKAGES="libguestfs-tools whois"
+PRIVATE_KEY=id_${ALGORITHM}
+PUBLIC_KEY=id_${ALGORITHM}.pub
 VM_CPUS=2
 VM_BASE=debian-10
 VM_DISK_SIZE=12G
 VM_FORMAT=qcow2
 VM_BASE_FILE=${VM_BASE}.${VM_FORMAT}
+# Comma separated list of packages to install on the guest.
+VM_PACKAGES=gpm,python3-apt,python3-minimal,qemu-guest-agent,sudo,vim-tiny
+VM_PREFIX=kvm
 # The type and name of network to use for the virtual machines (bridge=br0).
 VM_NETWORK="network=default"
 VM_RAM=1024
 
-VM_PREFIX=kvm
-
-BANNER_FILE=banner.txt
-
-# Use the new Elliptic Curve Digital Signature Algorithm standarized by the US government.
-ALGORITHM=ecdsa
-PRIVATE_KEY=id_${ALGORITHM}
-PUBLIC_KEY=id_${ALGORITHM}.pub
 # Create a new ssh key to manage the VMs.
 ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_KEY}
 
 # Ensure the VM guestfs tools and mkpasswd (whois) are installed on the host.
-sudo apt install -y libguestfs-tools whois
+sudo apt install -y ${HOST_PACKAGES}
 
 # Prompt the user for the administrator password.
 read -s -p "Enter the password for the VMs:" UNENCRYPTED_PASSWORD
@@ -56,9 +54,9 @@ echo "Starting build of ${VM_BASE_FILE} at $(date)"
 # Build a minimal install of a debian VM before the loop starts.
 sudo virt-builder ${VM_BASE} \
   --format ${VM_FORMAT} \
-  --append-line "/etc/network/interfaces:auto enp1s0" \
-  --append-line "/etc/network/interfaces:iface enp1s0 inet dhcp" \
-  --install ${PACKAGES} \
+  --append-line "/etc/network/interfaces:auto ens3" \
+  --append-line "/etc/network/interfaces:iface ens3 inet dhcp" \
+  --install ${VM_PACKAGES} \
   --output ${VM_BASE_FILE} \
   --run-command 'useradd -c "The Administrator account" -d '"${ADMIN_HOME}"' -G sudo -m -s /bin/bash '"${ADMIN}"'' \
   --smp 4 \
@@ -66,9 +64,9 @@ sudo virt-builder ${VM_BASE} \
   --root-password password:${UNENCRYPTED_PASSWORD} \
   --password ${ADMIN}:password:${UNENCRYPTED_PASSWORD} \
   --size ${VM_DISK_SIZE} \
-  --upload ${BANNER_FILE}:/etc/${BANNER_FILE} \
-  --link /etc/${BANNER_FILE}:/etc/issue.net:/etc/issue \
-  --run-command 'sed -i "s|^#Banner.*|Banner /etc/'"${BANNER_FILE}"'|" /etc/ssh/sshd_config' \
+  --upload ${BANNER_FILE}:/etc/issue \
+  --link /etc/issue:/etc/issue.net \
+  --run-command 'sed -i "s|^#Banner.*|Banner /etc/issue|" /etc/ssh/sshd_config' \
   --firstboot-command "dpkg-reconfigure openssh-server" \
   --write /etc/sudoers.d/50-${ADMIN}-NOPASSWD:"${ADMIN} ALL=(ALL:ALL) NOPASSWD:ALL"
 FINISH=$(date +%s)

@@ -23,30 +23,29 @@ fi
 # The administrator user that will be created.
 ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
+# Use the Elliptic Curve Digital Signature Algorithm standarized by the US government.
+ALGORITHM=ecdsa
+BANNER_FILE=banner.txt
 BEGIN=$(date +%s)
-
-# Comma separated list of packages to install.
-PACKAGES=python3-apt,python3-minimal,sudo,vim-tiny
-LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
-LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
-LXC_RELEASE=buster # #(lsb_release --codename --short)
-LXC_TEMPLATE=debian
-LXC_ROOT_DIR=/var/lib/lxc
-
 CONTAINER_PREFIX=priv-LXC
 CONTAINER_BASE=${CONTAINER_PREFIX}-base
-
-BANNER_FILE=banner.txt
-
-# Use the new Elliptic Curve Digital Signature Algorithm standarized by the US government.
-ALGORITHM=ecdsa
+# Space separated list of packages to install on the host.
+HOST_PACKAGES="lxc lxc-templates libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois"
+LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
+LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
+# Comma separated list of packages to install.
+LXC_PACKAGES=openssh-server,python3-apt,python3-minimal,sudo,vim-tiny
+LXC_RELEASE=buster # #(lsb_release --codename --short)
+LXC_ROOT_DIR=/var/lib/lxc
+LXC_TEMPLATE=debian
 PRIVATE_KEY=id_${ALGORITHM}
 PUBLIC_KEY=id_${ALGORITHM}.pub
+
 # Create a new ssh key to manage the containers.
 ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_KEY}
 
 # Ensure the LXC software and mkpasswd is installed on the host.
-sudo apt install -y lxc lxc-templates libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois
+sudo apt install -y ${HOST_PACKAGES}
 
 # Prompt the user for the administrator password.
 read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD
@@ -58,7 +57,7 @@ echo "Network setup is required, see: https://wiki.debian.org/LXC#Host-shared_br
 START=$(date +%s)
 
 echo "Creating the container ${CONTAINER_BASE} at $(date)"
-sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${PACKAGES}
+sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${LXC_PACKAGES}
 
 # Run commands that edit the root filesystem before the container is started.
 echo "Creating the administrator user ${ADMIN}"
@@ -85,12 +84,11 @@ sudo cp -v 50-${ADMIN}-NOPASSWD ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/sud
 rm -v 50-${ADMIN}-NOPASSWD
 
 # Copy the banner file to the container.
-sudo cp -v ${BANNER_FILE} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/${BANNER_FILE}
+sudo cp -v ${BANNER_FILE} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/issue
 # Modify sshd_config to use the baner file.
-sudo sed -i "s|^#Banner.*|Banner /etc/${BANNER_FILE}|" ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/ssh/sshd_config
-# Create links to the banner file with /etc/issue and /etc/issue.net
-sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/bin/ln -s -f /etc/${BANNER_FILE} /etc/issue
-sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/bin/ln -s -f /etc/${BANNER_FILE} /etc/issue.net
+sudo sed -i "s|^#Banner.*|Banner /etc/issue|" ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/ssh/sshd_config
+# Create symbolic link to the /etc/issue and /etc/issue.net
+sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/bin/ln -s -f /etc/issue /etc/issue.net
 
 FINISH=$(date +%s)
 echo "Creating ${CONTAINER_BASE} took $(($FINISH-$START)) seconds."

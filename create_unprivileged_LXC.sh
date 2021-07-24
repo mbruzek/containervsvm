@@ -18,30 +18,28 @@ fi
 # The administrator user that will be created.
 ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
+# Use the Elliptic Curve Digital Signature Algorithm standarized by the US government.
+ALGORITHM=ecdsa
+BANNER_FILE=banner.txt
 BEGIN=$(date +%s)
-
-# Space separated list of packages to install.
-PACKAGES="openssh-server python3-apt python3-minimal sudo vim-tiny"
-LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
-LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
-LXC_RELEASE=buster # #(lsb_release --codename --short)
-LXC_TEMPLATE=download
-LXC_ROOT_DIR=${HOME}/.local/share/lxc
-
 CONTAINER_PREFIX=unpriv-LXC
 CONTAINER_BASE=${CONTAINER_PREFIX}-base
-
-BANNER_FILE=banner.txt
-
-# Use the new Elliptic Curve Digital Signature Algorithm standarized by the US government.
-ALGORITHM=ecdsa
+HOST_PACKAGES="lxc lxc-templates libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois"
+LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
+LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
+# Space separated list of packages to install.
+LXC_PACKAGES="openssh-server python3-apt python3-minimal sudo vim-tiny"
+LXC_RELEASE=buster # #(lsb_release --codename --short)
+LXC_ROOT_DIR=${HOME}/.local/share/lxc
+LXC_TEMPLATE=download
 PRIVATE_KEY=id_${ALGORITHM}
 PUBLIC_KEY=id_${ALGORITHM}.pub
+
 # Create a new ssh key to manage the containers.
 ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_KEY}
 
 # Ensure the LXC software and mkpasswd is installed on the host.
-sudo apt install -y lxc lxc-templates libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois
+sudo apt install -y ${HOST_PACKAGES}
 
 # Prompt the user for the administrator password.
 read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD
@@ -92,9 +90,8 @@ lxc-attach --name ${CONTAINER_BASE} -- /usr/sbin/useradd \
   -s /bin/bash \
   ${ADMIN};
 
-cat ${BANNER_FILE} | lxc-attach --name ${CONTAINER_BASE} -- tee -i /etc/banner.txt
-lxc-attach --name ${CONTAINER_BASE} -- ln -s -f /etc/banner.txt /etc/issue
-lxc-attach --name ${CONTAINER_BASE} -- ln -s -f /etc/banner.txt /etc/issue.net
+cat ${BANNER_FILE} | lxc-attach --name ${CONTAINER_BASE} -- tee -i /etc/issue
+lxc-attach --name ${CONTAINER_BASE} -- ln -s -f /etc/issue /etc/issue.net
 
 # Create the administrator user's .ssh directory.
 lxc-attach --name ${CONTAINER_BASE} -- mkdir -p ${ADMIN_HOME}/.ssh
@@ -103,9 +100,9 @@ cat ${PUBLIC_KEY} | lxc-attach --name ${CONTAINER_BASE} -- tee -a -i ${ADMIN_HOM
 lxc-attach --name ${CONTAINER_BASE} -- chown -R ${ADMIN}:${ADMIN} ${ADMIN_HOME}/.ssh
 lxc-attach --name ${CONTAINER_BASE} -- chmod 700 ${ADMIN_HOME}/.ssh
 
-lxc-attach --name ${CONTAINER_BASE} -- apt install -y ${PACKAGES}
+lxc-attach --name ${CONTAINER_BASE} -- apt install -y ${LXC_PACKAGES}
 
-lxc-attach --name ${CONTAINER_BASE} -- sed -i "s|^#Banner.*|Banner /etc/${BANNER_FILE}|" /etc/ssh/sshd_config
+lxc-attach --name ${CONTAINER_BASE} -- sed -i "s|^#Banner.*|Banner /etc/issue|" /etc/ssh/sshd_config
 
 # Create a file to enable passwordless sudo for the Administrator user.
 echo "${ADMIN} ALL=(ALL:ALL) NOPASSWD:ALL" | lxc-attach --name ${CONTAINER_BASE} -- tee -i /etc/sudoers.d/50-${ADMIN}-NOPASSWD

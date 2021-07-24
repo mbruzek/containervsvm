@@ -23,31 +23,32 @@ fi
 # The administrator user that will be created.
 ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
+# Use the Elliptic Curve Digital Signature Algorithm standarized by the US government.
+ALGORITHM=ecdsa
 BANNER_FILE=banner.txt
 BEGIN=$(date +%s)
 CONTAINER_PREFIX=priv-libvirtLXC
 CONTAINER_BASE=${CONTAINER_PREFIX}-base
+# Space separated list of package to install on the host.
+HOST_PACKAGES="lxc lxc-templates libvirt-daemon-driver-lxc libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois"
 LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
 LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
 LXC_NETWORK="bridge=lxcbr0"  # or network=default
+# Comma separated list of packages to install on the guest.
+LXC_PACKAGES=openssh-server,python3-apt,python3-minimal,qemu-guest-agent,sudo,vim-tiny
 LXC_RAM=1024
 LXC_RELEASE=buster # #(lsb_release --codename --short)
 LXC_ROOT_DIR=/var/lib/lxc
 LXC_TEMPLATE=debian
 LXC_VCPUS=2
-
-# Space separated list of packages to install.
-PACKAGES="openssh-server,python3-apt,python3-minimal,sudo,vim-tiny"
-
-# Use the new Elliptic Curve Digital Signature Algorithm standarized by the US government.
-ALGORITHM=ecdsa
 PRIVATE_KEY=id_${ALGORITHM}
 PUBLIC_KEY=id_${ALGORITHM}.pub
+
 # Create a new ssh key to manage the containers.
 ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_KEY}
 
 # Ensure the LXC software and mkpasswd is installed on the host.
-sudo apt install -y lxc lxc-templates libvirt-daemon-driver-lxc libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois
+sudo apt install -y ${HOST_PACKAGES}
 
 # Prompt the user for the administrator password.
 read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD
@@ -59,7 +60,7 @@ echo "Network setup is required, see: https://wiki.debian.org/LXC#Host-shared_br
 START=$(date +%s)
 
 echo "Creating the container ${CONTAINER_BASE} at $(date)"
-sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${PACKAGES}
+sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${LXC_PACKAGES}
 
 # Run commands that edit the root filesystem before the container is started.
 echo "Creating the administrator user ${ADMIN}"

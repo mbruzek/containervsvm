@@ -16,7 +16,7 @@ else
   RANGE_STOP=1
 fi
 BEGIN=$(date +%s)
-CONTAINER_PREFIX=lxc
+CONTAINER_PREFIX=priv-LXC
 
 # Loop over the specified number of VMs.
 for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do

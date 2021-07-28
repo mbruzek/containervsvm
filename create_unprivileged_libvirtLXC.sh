@@ -44,6 +44,7 @@ ssh-keygen -b 521 -t ${ALGORITHM} -P "" -C "${ALGORITHM} ssh key" -f ${PRIVATE_K
 
 # Ensure the LXC software and mkpasswd is installed on the host.
 sudo apt install -y ${HOST_PACKAGES}
+sudo systemctl restart libvirtd
 
 # Prompt the user for the administrator password.
 read -s -p "Enter the password for the containers:" UNENCRYPTED_PASSWORD

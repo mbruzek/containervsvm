@@ -25,11 +25,12 @@ BEGIN=$(date +%s)
 CONTAINER_PREFIX=unpriv-LXC
 CONTAINER_BASE=${CONTAINER_PREFIX}-base
 HOST_PACKAGES="lxc lxc-templates libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois"
+KEYSERVER="pgp.mit.edu"
 LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
 LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
 # Space separated list of packages to install.
 LXC_PACKAGES="openssh-server python3-apt python3-minimal sudo vim-tiny"
-LXC_RELEASE=buster # #(lsb_release --codename --short)
+LXC_RELEASE=bullseye # #(lsb_release --codename --short)
 LXC_ROOT_DIR=${HOME}/.local/share/lxc
 LXC_TEMPLATE=download
 PRIVATE_KEY=id_${ALGORITHM}
@@ -68,7 +69,7 @@ echo "${ADMIN} veth lxcbr0 1024" | sudo tee -i /etc/lxc/lxc-usernet
 START=$(date +%s)
 
 echo "Creating the container ${CONTAINER_BASE} at $(date)"
-lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --arch ${LXC_ARCH} --dist ${LXC_DIST} --release ${LXC_RELEASE}
+lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --arch ${LXC_ARCH} --dist ${LXC_DIST} --keyserver ${KEYSERVER} --release ${LXC_RELEASE}
 
 # Star the container running.
 lxc-start --name ${CONTAINER_BASE}

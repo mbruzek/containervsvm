@@ -35,7 +35,7 @@ LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
 LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
 # Comma separated list of packages to install.
 LXC_PACKAGES=openssh-server,python3-apt,python3-minimal,sudo,vim-tiny
-LXC_RELEASE=buster # #(lsb_release --codename --short)
+LXC_RELEASE=bullseye # #(lsb_release --codename --short)
 LXC_ROOT_DIR=/var/lib/lxc
 LXC_TEMPLATE=debian
 PRIVATE_KEY=id_${ALGORITHM}
@@ -57,7 +57,7 @@ echo "Network setup is required, see: https://wiki.debian.org/LXC#Host-shared_br
 START=$(date +%s)
 
 echo "Creating the container ${CONTAINER_BASE} at $(date)"
-sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${LXC_PACKAGES}
+sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${LXC_PACKAGES} --release ${LXC_RELEASE}
 
 # Run commands that edit the root filesystem before the container is started.
 echo "Creating the administrator user ${ADMIN}"
@@ -78,10 +78,7 @@ echo "Creating authorized_keys file to allow ssh to this container."
 sudo cp -v ${PUBLIC_KEY} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh/authorized_keys
 
 # Create a file to enable passwordless sudo for the Administrator user.
-echo "${ADMIN} ALL=(ALL:ALL) NOPASSWD:ALL" > 50-${ADMIN}-NOPASSWD
-# Copy the file to the sudoers.d directory.
-sudo cp -v 50-${ADMIN}-NOPASSWD ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/sudoers.d/
-rm -v 50-${ADMIN}-NOPASSWD
+echo "${ADMIN} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo tee -i ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/sudoers.d/50-${ADMIN}-NOPASSWD
 
 # Copy the banner file to the container.
 sudo cp -v ${BANNER_FILE} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/issue

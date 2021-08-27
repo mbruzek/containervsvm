@@ -37,7 +37,7 @@ LXC_NETWORK="bridge=lxcbr0"  # or network=default
 # Comma separated list of packages to install on the guest.
 LXC_PACKAGES=openssh-server,python3-apt,python3-minimal,qemu-guest-agent,sudo,vim-tiny
 LXC_RAM=1024
-LXC_RELEASE=buster # #(lsb_release --codename --short)
+LXC_RELEASE=bullseye # #(lsb_release --codename --short)
 LXC_ROOT_DIR=/var/lib/lxc
 LXC_TEMPLATE=debian
 LXC_VCPUS=2
@@ -61,7 +61,7 @@ echo "Network setup is required, see: https://wiki.debian.org/LXC#Host-shared_br
 START=$(date +%s)
 
 echo "Creating the container ${CONTAINER_BASE} at $(date)"
-sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${LXC_PACKAGES}
+sudo lxc-create --template ${LXC_TEMPLATE} --name ${CONTAINER_BASE} -- --enable-non-free --packages=${LXC_PACKAGES} --release=${LXC_RELEASE}
 
 # Run commands that edit the root filesystem before the container is started.
 echo "Creating the administrator user ${ADMIN}"
@@ -82,18 +82,21 @@ echo "Creating authorized_keys file to allow ssh to this container."
 sudo cp -v ${PUBLIC_KEY} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/${ADMIN_HOME}/.ssh/authorized_keys
 
 # Create a file to enable passwordless sudo for the Administrator user.
-echo "${ADMIN} ALL=(ALL:ALL) NOPASSWD:ALL" > 50-${ADMIN}-NOPASSWD
-# Copy the file to the sudoers.d directory.
-sudo cp -v 50-${ADMIN}-NOPASSWD ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/sudoers.d/
-rm -v 50-${ADMIN}-NOPASSWD
+echo "${ADMIN} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo tee -i ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/sudoers.d/50-${ADMIN}-NOPASSWD
 
 # Copy the banner file to the container.
-sudo cp -v ${BANNER_FILE} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/${BANNER_FILE}
-# Modify sshd_config to use the baner file.
-sudo sed -i "s|^#Banner.*|Banner /etc/${BANNER_FILE}|" ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/ssh/sshd_config
-# Create links to the banner file with /etc/issue and /etc/issue.net
-sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/bin/ln -s -f /etc/${BANNER_FILE} /etc/issue
-sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /usr/bin/ln -s -f /etc/${BANNER_FILE} /etc/issue.net
+sudo cp -v ${BANNER_FILE} ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/issue
+# Modify sshd_config to use the issue file.
+sudo sed -i "s|^#Banner.*|Banner /etc/issue|" ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/ssh/sshd_config
+# Create link from /etc/issue to /etc/issue.net
+sudo chroot ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs /bin/ln -s -f /etc/issue /etc/issue.net
+
+# Disable ipv6 on the container.
+cat << EOF | sudo tee -i ${LXC_ROOT_DIR}/${CONTAINER_BASE}/rootfs/etc/sysctl.d/50-disable-ipv6.conf
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
+EOF
 
 FINISH=$(date +%s)
 echo "Creating ${CONTAINER_BASE} took $(($FINISH-$START)) seconds."
@@ -122,10 +125,11 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
   echo "Setting the root password"
   echo -e "${UNENCRYPTED_PASSWORD}\n${UNENCRYPTED_PASSWORD}" | sudo lxc-attach --name ${CONTAINER_NAME} -- passwd
 
-  echo "Changing the hostname to ${CONTAINER_NAME}"
-  sudo lxc-attach --name ${CONTAINER_NAME} -- hostname ${CONTAINER_NAME}
-
   sudo lxc-stop --name ${CONTAINER_NAME}
+
+  # Using the hostname command in the container did not work.
+  echo "Changing the hostname to ${CONTAINER_NAME}"
+  echo ${CONTAINER_NAME} | sudo tee -i ${LXC_ROOT_DIR}/${CONTAINER_NAME}/rootfs/etc/hostname
 
   FINISH=$(date +%s)
   echo "Customizing ${CONTAINER_NAME} took $(($FINISH-$START)) seconds."

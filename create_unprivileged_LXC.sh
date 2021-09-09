@@ -18,10 +18,11 @@ fi
 # The administrator user that will be created.
 ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
-# Use the Elliptic Curve Digital Signature Algorithm standarized by the US government.
+# Use the Elliptic Curve Digital Signature Algorithm standardized by the US government.
 ALGORITHM=ecdsa
 BANNER_FILE=banner.txt
 BEGIN=$(date +%s)
+BRIDGE=lxcbr0
 CONTAINER_PREFIX=unpriv-LXC
 CONTAINER_BASE=${CONTAINER_PREFIX}-base
 HOST_PACKAGES="lxc lxc-templates libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois"
@@ -63,7 +64,7 @@ echo "lxc.idmap = g 0 100000 65536" >> ${HOME}/.config/lxc/default.conf
 # echo "lxc.network.type = veth" >> ${HOME}/.config/lxc/default.conf
 # echo "lxc.network.link = lxcbr0" >> ${HOME}/.config/lxc/default.conf
 # User, type, device, limit
-echo "${ADMIN} veth lxcbr0 1024" | sudo tee -i /etc/lxc/lxc-usernet
+echo "${ADMIN} veth ${BRIDGE} 1024" | sudo tee -i /etc/lxc/lxc-usernet
 
 
 START=$(date +%s)

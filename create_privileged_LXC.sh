@@ -23,7 +23,7 @@ fi
 # The administrator user that will be created.
 ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
-# Use the Elliptic Curve Digital Signature Algorithm standarized by the US government.
+# Use the Elliptic Curve Digital Signature Algorithm standardized by the US government.
 ALGORITHM=ecdsa
 BANNER_FILE=banner.txt
 BEGIN=$(date +%s)

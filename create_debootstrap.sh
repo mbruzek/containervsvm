@@ -30,7 +30,7 @@ MIRROR=http://httpredir.debian.org/debian
 # Ensure the host has the debootstrap and mkpasswd software installed.
 sudo apt install -y bridge-utils debootstrap systemd-container whois
 
-# Use the new Elliptic Curve Digital Signature Algorithm standarized by the US government.
+# Use the new Elliptic Curve Digital Signature Algorithm standardized by the US government.
 ALGORITHM=ecdsa
 PRIVATE_KEY=id_${ALGORITHM}
 PUBLIC_KEY=id_${ALGORITHM}.pub

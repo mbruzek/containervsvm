@@ -23,17 +23,18 @@ fi
 # The administrator user that will be created.
 ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
-# Use the Elliptic Curve Digital Signature Algorithm standarized by the US government.
+# Use the Elliptic Curve Digital Signature Algorithm standardized by the US government.
 ALGORITHM=ecdsa
 BANNER_FILE=banner.txt
 BEGIN=$(date +%s)
+BRIDGE=lxcbr0
 CONTAINER_PREFIX=priv-libvirtLXC
 CONTAINER_BASE=${CONTAINER_PREFIX}-base
 # Space separated list of package to install on the host.
 HOST_PACKAGES="lxc lxc-templates libvirt-daemon-driver-lxc libvirt0 libpam-cgfs bridge-utils debian-archive-keyring uidmap whois"
 LXC_ARCH=amd64 # $(dpkg-architecture --query DEB_HOST_ARCH)
 LXC_DIST=debian # $(lsb_release --id --short | tr '[:upper:]' '[:lower:]')
-LXC_NETWORK="bridge=lxcbr0"  # or network=default
+LXC_NETWORK="bridge=${BRIDGE}"  # or network=default
 # Comma separated list of packages to install on the guest.
 LXC_PACKAGES=openssh-server,python3-apt,python3-minimal,qemu-guest-agent,sudo,vim-tiny
 LXC_RAM=1024
@@ -140,7 +141,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
     --autostart \
     --connect lxc:/// \
     --console pty,target_type=serial \
-    --description "Libvirt-LXC container created from ${CONTAINER_BASE} on $(date)" \
+    --description "Privileged libvirt-LXC container created from ${LXC_TEMPLATE} on $(date)" \
     --filesystem ${CONTAINER_PATH},/ \
     --memory ${LXC_RAM} \
     --name ${CONTAINER_NAME} \

@@ -18,7 +18,7 @@ fi
 # The administrator user that will be created.
 ADMIN=${USER}
 ADMIN_HOME=/home/${ADMIN}
-# Use the new Elliptic Curve Digital Signature Algorithm standarized by the US government.
+# Use the new Elliptic Curve Digital Signature Algorithm standardized by the US government.
 ALGORITHM=ecdsa
 BEGIN=$(date +%s)
 BANNER_FILE=banner.txt
@@ -88,7 +88,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
 
   VM_NAME=${VM_PREFIX}${NUM}
   # Create the path to the final VM disk image.
-  DISK_PATH=${VM_LIBVIRT_IMAGES}/${VM_NAME}.${VM_FORMAT}
+  DISK_PATH=${VM_IMAGES_DIRECTORY}/${VM_NAME}.${VM_FORMAT}
 
   echo "Starting customization of ${VM_NAME} at $(date)"
   # Copy the VM base file to the final VM disk path.
@@ -109,7 +109,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
     --autostart \
     --console pty,target_type=serial \
     --cpu=host \
-    --description "Virtual Machine created from ${VM_OS_VERSION} on $(date)" \
+    --description "KVM Virtual Machine created from ${VM_OS_VERSION} on $(date)" \
     --disk path=${DISK_PATH},format=${VM_FORMAT} \
     --import \
     --memory ${VM_RAM} \

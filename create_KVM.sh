@@ -25,16 +25,17 @@ BANNER_FILE=banner.txt
 HOST_PACKAGES="libguestfs-tools whois"
 PRIVATE_KEY=id_${ALGORITHM}
 PUBLIC_KEY=id_${ALGORITHM}.pub
+# Use `virt-builder --list` to get the list of supported os_versions
+VM_BASE=debian-11
 VM_CPUS=2
 VM_DISK_SIZE=12G
 VM_FORMAT=qcow2
+VM_FILENAME=${VM_BASE}.${VM_FORMAT}
 VM_IMAGES_DIRECTORY=/var/lib/libvirt/images
 # The type and name of network to use for the virtual machines (bridge=br0).
 VM_NETWORK="network=default"
 # The VM network interface card is different from hypervisor to hypervisor.
-VM_NIC=enp1s0
-# Use `virt-builder --list` to get the list of supported os_versions
-VM_OS_VERSION=debian-10
+VM_NIC=ens3
 # Comma separated list of packages to install on the guest.
 VM_PACKAGES=gpm,python3-apt,python3-minimal,qemu-guest-agent,sudo,vim-tiny
 VM_PREFIX=kvm
@@ -53,14 +54,14 @@ ENCRYPTED_PASSWORD=$(mkpasswd --method=sha-512 ${UNENCRYPTED_PASSWORD})
 
 START=$(date +%s)
 
-echo "Starting build of ${VM_OS_VERSION} at $(date)"
+echo "Starting build of ${VM_BASE} at $(date)"
 # Build a minimal install of a debian VM before the loop starts.
-sudo virt-builder ${VM_OS_VERSION} \
+sudo virt-builder ${VM_BASE} \
   --format ${VM_FORMAT} \
   --append-line "/etc/network/interfaces:auto ${VM_NIC}" \
   --append-line "/etc/network/interfaces:iface ${VM_NIC} inet dhcp" \
   --install ${VM_PACKAGES} \
-  --output virt-builder_${VM_OS_VERSION}.${VM_FORMAT} \
+  --output virt-builder_${VM_FILENAME} \
   --run-command 'useradd -c "The Administrator account" -d '"${ADMIN_HOME}"' -G sudo -m -s /bin/bash '"${ADMIN}"'' \
   --smp 4 \
   --ssh-inject ${ADMIN}:file:${PUBLIC_KEY} \
@@ -73,14 +74,13 @@ sudo virt-builder ${VM_OS_VERSION} \
   --firstboot-command "dpkg-reconfigure openssh-server" \
   --write /etc/sudoers.d/50-${ADMIN}-NOPASSWD:"${ADMIN} ALL=(ALL:ALL) NOPASSWD:ALL"
 
-VM_BASE_DISK=${VM_OS_VERSION}.${VM_FORMAT}
 # Compress and sparsify the image to make a smaller base file.
-sudo virt-sparsify --compress virt-builder_${VM_OS_VERSION}.${VM_FORMAT} ${VM_BASE_DISK}
+sudo virt-sparsify --compress virt-builder_${VM_FILENAME} ${VM_FILENAME}
 # Remove the initial virt-builder VM disk.
-sudo rm -v virt-builder_${VM_OS_VERSION}.${VM_FORMAT}
+sudo rm -v virt-builder_${VM_FILENAME}
 
 FINISH=$(date +%s)
-echo "Building ${VM_OS_VERSION} took $(($FINISH-$START)) seconds."
+echo "Building ${VM_BASE} took $(($FINISH-$START)) seconds."
 
 # Loop in a sequence for the desired number of VMs.
 for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
@@ -92,7 +92,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
 
   echo "Starting customization of ${VM_NAME} at $(date)"
   # Copy the VM base file to the final VM disk path.
-  sudo cp -v --sparse=always ${VM_BASE_DISK} ${DISK_PATH}
+  sudo cp -v --sparse=always ${VM_FILENAME} ${DISK_PATH}
   # Change ownership of the final VM disk.
   sudo chown ${USER}:${USER} ${DISK_PATH}
 
@@ -109,7 +109,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
     --autostart \
     --console pty,target_type=serial \
     --cpu=host \
-    --description "KVM Virtual Machine created from ${VM_OS_VERSION} on $(date)" \
+    --description "KVM Virtual Machine created from ${VM_FILENAME} on $(date)" \
     --disk path=${DISK_PATH},format=${VM_FORMAT} \
     --import \
     --memory ${VM_RAM} \
@@ -126,7 +126,7 @@ for NUM in $(seq -w ${RANGE_START} ${RANGE_STOP}); do
 done
 
 # Delete the VM base file.
-sudo rm -v ${VM_BASE_DISK}
+sudo rm -v ${VM_FILENAME}
 
 END=$(date +%s)
 echo "$(basename $0) script completed in $(($END-$BEGIN)) seconds total."

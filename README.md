@@ -1,4 +1,4 @@
-# Containers vs. VMs
+# Container vs. VM
 
 A collection of scripts to manage a large number of very basic LXC containers
 and VMs for testing or comparison.
